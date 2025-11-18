@@ -1,0 +1,28 @@
+# Mark all bash scripts as executable
+install text eol=lf
+commands text eol=lf
+functions text eol=lf
+config text eol=lf
+common-functions text eol=lf
+help-functions text eol=lf
+service-list text eol=lf
+update text eol=lf
+
+# Hook files
+pre-start text eol=lf
+pre-delete text eol=lf
+pre-restore text eol=lf
+post-app-clone-setup text eol=lf
+post-app-rename-setup text eol=lf
+
+# Subcommands
+subcommands/* text eol=lf
+
+# Scripts
+scripts/*.sh text eol=lf
+tests/*.sh text eol=lf
+tests/*.bash text eol=lf
+
+# Make all bash scripts executable
+*.sh text eol=lf
+

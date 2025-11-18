@@ -215,5 +215,8 @@ service_start() {
 service_url() {
   local SERVICE="$1"
   local SERVICE_DNS_HOSTNAME="$(service_dns_hostname "$SERVICE")"
-  echo "$PLUGIN_SCHEME://$SERVICE_DNS_HOSTNAME:${PLUGIN_DATASTORE_PORTS[0]}"
+  local PASSWORD="$(service_password "$SERVICE")"
+  local USERNAME="admin"
+  local PORT="9000"
+  echo "http::addr=$SERVICE_DNS_HOSTNAME:$PORT;username=$USERNAME;password=$PASSWORD;"
 }

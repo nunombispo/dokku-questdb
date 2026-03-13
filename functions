@@ -171,9 +171,14 @@ service_import() {
   if [[ -t 0 ]]; then
     dokku_log_fail "No data provided on stdin."
   fi
-  # QuestDB import: restore data directory or execute SQL statements
-  # For SQL import, pipe directly to psql
-  "$DOCKER_BIN" container exec -i "$SERVICE_NAME" psql -h localhost -p 8812
+  # QuestDB import: restore data directory from backup
+  # Expect a tar.gz stream created by service_export and unpack into the data directory
+  service_stop "$SERVICE" "true" || true
+  rm -rf "$SERVICE_HOST_ROOT/data"
+  mkdir -p "$SERVICE_HOST_ROOT/data"
+  tar -xzf - -C "$SERVICE_HOST_ROOT/data" 2>/dev/null
+  status=$?
+  exit $status
 }
 
 service_start() {

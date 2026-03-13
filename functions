@@ -172,20 +172,20 @@ service_import() {
     dokku_log_fail "No data provided on stdin."
   fi
   # QuestDB import: restore data directory from backup tar.gz stream
-  # Perform filesystem operations inside a container so permissions match QuestDB's user
-  [[ -f "$SERVICE_ROOT/IMAGE" ]] && PLUGIN_IMAGE="$(cat "$SERVICE_ROOT/IMAGE")"
-  [[ -f "$SERVICE_ROOT/IMAGE_VERSION" ]] && PLUGIN_IMAGE_VERSION="$(cat "$SERVICE_ROOT/IMAGE_VERSION")"
-
-  service_stop "$SERVICE" "true" || true
+  # Stop the running container if present
+  local ID
+  ID=$("$DOCKER_BIN" container ps -aq --no-trunc --filter "status=running" --filter "name=^/$SERVICE_NAME$") || true
+  if [[ -n "$ID" ]]; then
+    "$DOCKER_BIN" container stop "$SERVICE_NAME" >/dev/null || true
+  fi
 
   mkdir -p "$SERVICE_HOST_ROOT/data"
 
-  # Use a throwaway QuestDB image container with the data directory mounted
-  # to wipe existing data and extract the backup with correct ownership
+  # Use a lightweight helper image with tar available to reset and restore the data directory
   "$DOCKER_BIN" container run --rm -i \
-    -v "$SERVICE_HOST_ROOT/data:/var/lib/questdb" \
-    "$PLUGIN_IMAGE:$PLUGIN_IMAGE_VERSION" \
-    sh -lc 'rm -rf /var/lib/questdb/* && tar -xzf - -C /var/lib/questdb'
+    -v "$SERVICE_HOST_ROOT/data:/data" \
+    alpine:3.19 \
+    sh -lc 'rm -rf /data/* && tar -xzf - -C /data'
   status=$?
   exit $status
 }

@@ -171,12 +171,21 @@ service_import() {
   if [[ -t 0 ]]; then
     dokku_log_fail "No data provided on stdin."
   fi
-  # QuestDB import: restore data directory from backup
-  # Expect a tar.gz stream created by service_export and unpack into the data directory
+  # QuestDB import: restore data directory from backup tar.gz stream
+  # Perform filesystem operations inside a container so permissions match QuestDB's user
+  [[ -f "$SERVICE_ROOT/IMAGE" ]] && PLUGIN_IMAGE="$(cat "$SERVICE_ROOT/IMAGE")"
+  [[ -f "$SERVICE_ROOT/IMAGE_VERSION" ]] && PLUGIN_IMAGE_VERSION="$(cat "$SERVICE_ROOT/IMAGE_VERSION")"
+
   service_stop "$SERVICE" "true" || true
-  rm -rf "$SERVICE_HOST_ROOT/data"
+
   mkdir -p "$SERVICE_HOST_ROOT/data"
-  tar -xzf - -C "$SERVICE_HOST_ROOT/data" 2>/dev/null
+
+  # Use a throwaway QuestDB image container with the data directory mounted
+  # to wipe existing data and extract the backup with correct ownership
+  "$DOCKER_BIN" container run --rm -i \
+    -v "$SERVICE_HOST_ROOT/data:/var/lib/questdb" \
+    "$PLUGIN_IMAGE:$PLUGIN_IMAGE_VERSION" \
+    sh -lc 'rm -rf /var/lib/questdb/* && tar -xzf - -C /var/lib/questdb'
   status=$?
   exit $status
 }
